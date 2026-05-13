@@ -10,28 +10,53 @@ import {
   Text,
   VStack,
 } from "@chakra-ui/react";
-import tweetsData from "./Data/tweets.json"
-import type { Tweet } from "./types/Tweet";
-import {useState} from "react";
+import type { Tweet } from "./types/Tweet"
+import { useState, useEffect } from "react";
+import { supabase } from "./utils/supabase";
+
 function App() {
-  const [tweets, setTweets] = useState<Tweet[]>(tweetsData as Tweet[]);
+  // Tweets is the current list of tweets shown
+  // set tweets is how React updates all instances
+  // We are starting with tweets from json file
+  const [tweets, setTweets] = useState<Tweet[]>([]);
+
+  useEffect(() => {
+  async function load() {
+    const { data, error } = await supabase
+      .from("tweets")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) console.error(error);
+    else setTweets(data || []);
+  }
+
+    load();
+  }, []);
+
+  // input is what is typed in the box, setInput is how we update it
   const [input, setInput] = useState("");
+
+  // function to run when user clicks yap button
   const handleYapClick = () => {
-    if(!input.trim())return; // Don't post empty tweets
+    // if input is empty or white space, end function
+    if(!input.trim()) return;
     const newTweet: Tweet = {
       id: Date.now(),
-      name: "Guest",
+      name: "JoeSmoe",
       username: "@you",
       createdAt: new Date().toISOString(),
-      text: input,
+      text: input.trim(),
       likes: 0,
       replies: 0,
-      tag: "guest"
+      tag: ""
     };
+    // Puts new tweet first, then copy in old tweets
     setTweets([newTweet, ...tweets]);
-    setInput("");
+    // clear input box after posting
+    setInput("")
   }
-  
+
   // Save the current time once during this render.
   const currentTime = new Date().toISOString();
 
@@ -76,7 +101,9 @@ function App() {
                 value={input}
                 onChange={(userInput) => setInput(userInput.target.value)}
               />
-              <Button alignSelf="flex-end" bg="blue.500" color="white" onClick={handleYapClick}>
+              <Button alignSelf="flex-end" bg="blue.500" color="white"
+                onClick={handleYapClick}
+              >
                 Yap
               </Button>
             </VStack>
